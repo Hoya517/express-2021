@@ -1,43 +1,9 @@
 import { Router } from "express";
-import _ from "lodash";
-import sequelize from "sequelize";
-import faker from "faker";
+import db from "../models/index.js";
 
-const seq = new sequelize('express', 'root', 'hoy2158831a@', {
-    host: 'localhost',
-    dialect: 'mysql',
-    // logging: false
-});
-
-const Board = seq.define("board", {
-    title: {
-        type: sequelize.STRING,
-        allowNull: false
-    },
-    content: {
-        type: sequelize.TEXT,
-        allowNull: true
-    }
-});
-
-const board_sync = async() => {
-    try {
-        await Board.sync({force: true});
-        for (let i=0; i<10000; i++) {
-            await Board.create({
-                title: faker.lorem.sentences(1),
-                content: faker.lorem.sentences(10)
-            })
-        }
-    } catch(err) {
-        console.log(err)
-    }
-}
-// board_sync(); // 생성 안할때, 주석
+const { Board } = db.Board;
 
 const boardRouter = Router();
-
-let boards = [];
 
 boardRouter.get("/", async(req, res) => {
     try {

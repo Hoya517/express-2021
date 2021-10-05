@@ -1,84 +1,15 @@
 import { Router } from "express";
-import _ from "lodash";
-import sequelize from "sequelize";
-import faker from "faker";
-import bcrypt from "bcrypt";
-faker.locale = "ko";
+// import sequelize from "sequelize";
+import db from "../models/index.js";
 
-const seq = new sequelize('express', 'root', 'hoy2158831a@', {
-    host: 'localhost',
-    dialect: 'mysql',
-    // logging: false
-});
-
-const check_sequelize_auth = async () => {
-    try{
-        await seq.authenticate();
-        console.log("연결 성공");
-    }catch(err){
-        console.log("연결 실패: ", err);
-    }
-};
-check_sequelize_auth();
-
-const User = seq.define("user", {
-    name: {
-        type: sequelize.STRING,
-        allowNull: false
-    },
-    age: {
-        type: sequelize.INTEGER,
-        allowNull: false
-    },
-    password: {
-        type: sequelize.STRING,
-        allowNull: false
-    }
-});
-
-// const initDb = async() => {
-//     await User.sync();
-//     await Board.sync();
-// }
-// initDb();
-
-
-const user_sync = async () => {
-    try {
-        await User.sync({force: true});
-        for(let i=0; i<10000; i++) {
-            const hashpwd = await bcrypt.hash("test1234", 10);
-            User.create({
-                name: faker.name.lastName()+faker.name.firstName(),
-                age: getRandomInt(15,50),  // i 일때, await으로 동기처리를 해줘야함.
-                password: hashpwd
-            });
-        }
-    } catch(err) {
-        console.log(err);
-    }
-};
-
-
-// user_sync();  // 유저 생성 안할때, 주석
-
+const { User } = db.User;
 
 const userRouter = Router();
-
-const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min);
-}
-
-
-console.log("준비됨");
-
 
 userRouter.get("/", async(req, res) => {
     try {
         let { name, age } = req.query;
-        const { Op } = sequelize;
+        const { Op } = db.sequelize;
         const findUserQuery = {
             attributes: ['id', 'name', 'age'],
         }
@@ -120,7 +51,7 @@ userRouter.get("/:id", (req, res) => {
 });
 
 //유저생성
-userRouter.post("", async(req, res) => {
+userRouter.post("/", async(req, res) => {
     try {
         const { name, age } = req.body;
         if (!name || !age) res.status(400).send({msg: "입력요청이 잘못되었습니다."});
@@ -187,7 +118,7 @@ userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한
 userRouter.get("/test/:id", async(req, res) => {
     try{
         // findAll
-        const Op = sequelize.Op;
+        const Op = db.sequelize;
         const userResult = await User.findAll({
             attributes: ['id', 'name', 'age', 'updatedAt'],
             where : {
