@@ -5,7 +5,7 @@ import faker from "faker";
 import bcrypt from "bcrypt";
 faker.locale = "ko";
 
-const seq = new sequelize('express', 'root', 'password', {
+const seq = new sequelize('express', 'root', 'hoy2158831a@', {
     host: 'localhost',
     dialect: 'mysql',
     // logging: false
