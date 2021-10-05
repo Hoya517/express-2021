@@ -5,7 +5,7 @@ import faker from "faker";
 import bcrypt from "bcrypt";
 faker.locale = "ko";
 
-const seq = new sequelize('express', 'root', 'hoy2158831a@', {
+const seq = new sequelize('express', 'root', 'password', {
     host: 'localhost',
     dialect: 'mysql',
     // logging: false
@@ -131,11 +131,8 @@ userRouter.post("", async(req, res) => {
         });
     } catch(err) {
         console.log(err);
-        res.status(500).send({
-            msg: "서비스 이용에 불편을 드려 죄송합니다."
-        });
+        res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
     }
-    
 });
 
 //name 변경
@@ -157,7 +154,7 @@ userRouter.put("/:id", async (req, res) => {
 
         await user.save();
 
-        res.status(200).send({ msg: '유저정보가가 정상적으로 수정 되었습니다.' });
+        res.status(200).send({ msg: '유저정보가 정상적으로 수정 되었습니다.' });
 
     } catch(err) {
         console.log(err);
@@ -179,7 +176,7 @@ userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한
         }
 
         await user.destroy();
-        res.status(200).send({ msg: '유저정보가가 정상적으로 삭제 되었습니다.' });
+        res.status(200).send({ msg: '유저정보가 정상적으로 삭제 되었습니다.' });
 
     } catch(err) {
         console.log(err);
