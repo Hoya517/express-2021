@@ -3,6 +3,7 @@ import Sequelize from 'sequelize';
 
 import User from './user.js';
 import Board from './board.js';
+import Permission from './permission.js';
 
 dotenv.config();
 
@@ -23,16 +24,17 @@ sequelize.authenticate().then(() => {
 const db = {
     User: User(sequelize, Sequelize.DataTypes),
     Board: Board(sequelize, Sequelize.DataTypes),
+    Permission: Permission(sequelize, Sequelize.DataTypes),
 };
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-// Object.keys(db)
-//     .forEach((modelName) => {
-//         if (db[modelName].associate) {
-//             db[modelName].associate(db);
-//         }    
-//     });
+Object.keys(db)
+    .forEach((modelName) => {
+        if (db[modelName].associate) {
+            db[modelName].associate(db);
+        }    
+    });
 
 export default db;
