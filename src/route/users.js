@@ -1,17 +1,18 @@
 import { Router } from "express";
 // import sequelize from "sequelize";
 import db from "../models/index.js";
+import permission from "../models/permission.js";
 
-const { User } = db.User;
+const { User, Permission } = db;
 
 const userRouter = Router();
 
 userRouter.get("/", async(req, res) => {
     try {
         let { name, age } = req.query;
-        const { Op } = db.sequelize;
+        const { Op } = db.Sequelize;
         const findUserQuery = {
-            attributes: ['id', 'name', 'age'],
+            attributes: ['id', 'name', 'age']
         }
         let result;
         if (name && age) {
@@ -53,12 +54,15 @@ userRouter.get("/:id", (req, res) => {
 //유저생성
 userRouter.post("/", async(req, res) => {
     try {
-        const { name, age } = req.body;
+        const { name, age, permission } = req.body;
         if (!name || !age) res.status(400).send({msg: "입력요청이 잘못되었습니다."});
 
-        const result = await User.create({name, age});
+        const user = await User.create({name, age});
+
+        await user.createPermission({title: permission.title, level: permission.level});
+
         res.status(201).send({
-            msg: `id ${result.id}, ${result.name} 유저가 생성되었습니다.`
+            msg: `id ${user.id}, ${user.name} 유저가 생성되었습니다.`
         });
     } catch(err) {
         console.log(err);
@@ -118,7 +122,7 @@ userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한
 userRouter.get("/test/:id", async(req, res) => {
     try{
         // findAll
-        const Op = db.sequelize;
+        const Op = db.Sequelize;
         const userResult = await User.findAll({
             attributes: ['id', 'name', 'age', 'updatedAt'],
             where : {

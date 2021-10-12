@@ -5,7 +5,7 @@ export default (sequelize, DataTypes) => {
             allowNull: false
         },
         level: {
-            type: DataTypes.TEXT,
+            type: DataTypes.INTEGER,
             allowNull: false
         },
         desc: {
