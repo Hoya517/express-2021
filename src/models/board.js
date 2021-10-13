@@ -8,6 +8,9 @@ export default (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true
         }
+    }, {
+        // createdAt: false,
+        // updatedAt: false
     });
 
     Board.associate = function(models) {

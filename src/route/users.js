@@ -1,18 +1,22 @@
 import { Router } from "express";
-// import sequelize from "sequelize";
+import bcrypt from "bcrypt";
 import db from "../models/index.js";
-import permission from "../models/permission.js";
 
-const { User, Permission } = db;
+const { User, Board, Permission } = db;
 
 const userRouter = Router();
 
+// path: localhost:3000/users/
 userRouter.get("/", async(req, res) => {
     try {
+        // req.query => localhost:3000/users?name=홍길동&age=12
+        // req.query.name => 홍길동
+        // req.query.age => 12
         let { name, age } = req.query;
-        const { Op } = db.Sequelize;
+        const Op = Sequelize.Op;
         const findUserQuery = {
-            attributes: ['id', 'name', 'age']
+            attributes: ['id', 'name', 'age'],
+            include: [Permission]
         }
         let result;
         if (name && age) {
@@ -34,36 +38,51 @@ userRouter.get("/", async(req, res) => {
     }
 });
 
-userRouter.get("/:id", (req, res) => {
-    const findUser = _.find(users, {id: parseInt(req.params.id)});
-    let msg;
-    if(findUser){
-        msg = "정상적으로 조회되었습니다.";
-        res.status(200).send({
-            msg, findUser
+userRouter.get("/:id", async (req, res) => {
+    try {
+        const findUser = await User.findOne({
+            // include: [Permission, Board],
+            include: [{
+                model: Permission,
+                attributes: ["id", "title", "level"],
+            }, {
+                model: Board,
+                attributes: ["id", "title"]
+            }],
+            where: {
+                id: req.params.id
+            }
         });
-    } else {
-        msg = "해당 아이디를 가진 유저가 없습니다.";
-        res.status(400).send({
-            msg, findUser
-        });
+
+        if (findUser) {
+            res.status(200).send({findUser});
+        } else {
+            res.status(400).send({msg: '해당 아이디 값을 가진 board가 없습니다.'});
+        }
+    } catch(err) {
+        console.log(err);
+        res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
     }
-    
 });
 
 //유저생성
 userRouter.post("/", async(req, res) => {
     try {
-        const { name, age, permission } = req.body;
-        if (!name || !age) res.status(400).send({msg: "입력요청이 잘못되었습니다."});
+        // get과 다르게 (req.query) 가 아닌 req.body 에서 값을 가지고 옴.
+        const { name, age, password, permission } = req.body;  // permission 추가
+        if (!name || !age || !password || !permission) res.status(400).send({msg: "입력요청이 잘못되었습니다."});
+        else {
+            const hashpwd = await bcrypt.hash(password, 4);
+            const user = await User.create({name, age, password: hashpwd});  // password hash 처리
 
-        const user = await User.create({name, age});
+            await user.createPermission({
+                title: permission.title, level: permission.level
+            });
 
-        await user.createPermission({title: permission.title, level: permission.level});
-
-        res.status(201).send({
-            msg: `id ${user.id}, ${user.name} 유저가 생성되었습니다.`
-        });
+            res.status(201).send({
+                msg: `id ${user.id}, ${user.name} 유저가 생성되었습니다.`
+            });
+        }
     } catch(err) {
         console.log(err);
         res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
@@ -82,15 +101,13 @@ userRouter.put("/:id", async (req, res) => {
         });
         if(!user || (!name && !age)) {
             res.status(400).send({msg: '유저가 존재하지 않거나 입력값이 잘못 되었습니다.'});
+        } else {
+            if(name) user.name = name;
+            if(age)  user.age  = age;
+    
+            await user.save();
+            res.status(200).send({ msg: '유저정보가 정상적으로 수정 되었습니다.' });
         }
-
-        if(name) user.name = name;
-        if(age)  user.age  = age;
-
-        await user.save();
-
-        res.status(200).send({ msg: '유저정보가 정상적으로 수정 되었습니다.' });
-
     } catch(err) {
         console.log(err);
         res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
@@ -100,19 +117,18 @@ userRouter.put("/:id", async (req, res) => {
 //user 지우기
 userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한 체크
     try {
-
         let user = await User.findOne({
             where: {
                 id: req.params.id
             }
         });
+
         if(!user) {
             res.status(400).send({msg: '유저가 존재하지 않거나 입력값이 잘못 되었습니다.'});
+        } else {
+            await user.destroy();
+            res.status(200).send({ msg: '유저정보가 정상적으로 삭제 되었습니다.' });
         }
-
-        await user.destroy();
-        res.status(200).send({ msg: '유저정보가 정상적으로 삭제 되었습니다.' });
-
     } catch(err) {
         console.log(err);
         res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
@@ -122,7 +138,7 @@ userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한
 userRouter.get("/test/:id", async(req, res) => {
     try{
         // findAll
-        const Op = db.Sequelize;
+        const Op = Sequelize.Op;
         const userResult = await User.findAll({
             attributes: ['id', 'name', 'age', 'updatedAt'],
             where : {
@@ -139,7 +155,7 @@ userRouter.get("/test/:id", async(req, res) => {
             order : [['age', 'DESC'], ['name', 'ASC']]
         });
         
-        const boardResult = await Board.findAll();
+        const boardResult = await Board.findAll();  //limit
 
         const user = await User.findOne({
             where: { id: req.params.id }
